@@ -1,0 +1,273 @@
+openapi: '3.1.0'
+info:
+  title: Lloyd API
+  description: |
+    This endpoint lets you retrieve information on a specific user such as
+    a summary of their activity or a list of their activities.
+  version: '1.0'
+servers:
+  - url: https://api.withlloyd.com/v1
+paths:
+  /users:
+    get:
+      summary: List of Users
+      parameters:
+        - name: filter[no_activity_since]
+          in: query
+          description: Return users who have not had any activity since the specified date
+          schema:
+            type: integer
+            format: timestamp
+        - name: filter[email]
+          in: query
+          schema:
+            type: string
+        - name: filter[last_name]
+          in: query
+          schema:
+            type: string
+        - name: filter[first_name]
+          in: query
+          schema:
+            type: string
+        - name: filter[tags]
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: sort_key
+          in: query
+          schema:
+            type: string
+            enum: ["first_name", "last_name", "email"]
+        - name: sort_dir
+          in: query
+          schema:
+            type: string
+            enum: ["asc", "desc"]
+      responses:
+        '400':
+          description: BAD REQUEST
+        '401':
+          description: UNAUTHORIZED
+        '404':
+          description: NOT FOUND
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    user_id: 
+                      type: string
+                    email:
+                      type: string
+                    first_name:
+                      type: string
+                    last_name:
+                      type: string
+                    tags:
+                      type: array
+                      items:
+                        type: string
+                    last_activity:
+                      type: object
+                      format: timestamp
+  /users/flight_risks:
+    get:
+      summary: Flight Risks
+      description: |
+        Returns a list of users and their associated chance of flight risk.
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          format: timestamp
+          type: integer
+      - name: to
+        in: query
+        required: true
+        schema:
+          format: timestamp
+          type: integer
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          min: 1
+          max: 100
+      - name: page 
+        in: query
+        schema:
+          type: integer
+          min: 1
+      responses:
+        '400':
+          description: BAD REQUEST
+        '401':
+          description: UNAUTHORIZED
+        '404':
+          description: NOT FOUND
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    user_id: 
+                      type: integer
+                    flight_risk:
+                      type: integer
+                      format: Percentage represented as integer
+
+  /users/{id}/activities:
+    get:
+      summary: User Activities
+      description: |
+        Retrieve content from users, including messages sent and commits made.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: from
+        in: query
+        required: true
+        schema:
+          format: timestamp
+          type: integer
+      - name: to
+        in: query
+        required: true
+        schema:
+          format: timestamp
+          type: integer
+      - name: activities
+        in: query
+        required: true
+        schema:
+          type: array
+          items:
+            type: string
+            enum: ["messages_sent", "commits", "meetings_attended"]
+      responses:
+        '400':
+          description: BAD REQUEST
+        '401':
+          description: UNAUTHORIZED
+        '404':
+          description: NOT FOUND
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type: 
+                      type: string
+                      enum: ["message", "commit", "meeting"]
+                    timestamp:
+                      type: integer
+                      format: timestamp
+                    content:
+                      type: string
+                      description: |
+                        This will either be the content of the message, the name of the meeting, or a link to the commit hash.
+
+  /users/{id}/activities/summary:
+    get:
+      summary: User Activity Summary
+      description: |
+        Retrieve summary information on a user's activity between specified dates.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: from
+        in: query
+        required: true
+        schema:
+          format: timestamp
+          type: integer
+      - name: to
+        in: query
+        required: true
+        schema:
+          format: timestamp
+          type: integer
+      responses:
+        '400':
+          description: BAD REQUEST
+        '401':
+          description: UNAUTHORIZED
+        '404':
+          description: NOT FOUND
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  flight_risk_score:
+                    type: integer
+                    format: Percentage represented as integer
+                    description: Chance the user will churn without direct action.
+                  confidence_score:
+                    type: integer
+                    format: Percentage represented as integer
+                    description: |
+                      This number represents the confidence score in the returned flight risk and "chance for engagement" numbers
+                  chance_for_engagement_score:
+                    type: integer
+                    format: Percentage represented as integer
+                    description: |
+                      This number represents the chance the user will respond when sent a message from an advisor.
+                  engagement_score:
+                    type: integer
+                    format: Percentage represented as integer
+                    description: |
+                      This number represents the user's engagement score.
+
+                  chat:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                        enum: ["custom", "slack"]
+                      messages_sent:
+                        type: integer
+                      logins:
+                        type: integer
+                  video:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                        enum: ["zoom"]
+                      missed:
+                        type: integer
+                      attended:
+                        type: integer
+                  code:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                        enum: ["github"]
+                      commits:
+                        type: integer
