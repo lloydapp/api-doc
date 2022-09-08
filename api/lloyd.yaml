@@ -1,14 +1,191 @@
 openapi: '3.1.0'
 info:
   title: Lloyd API
-  description: |
-    This endpoint lets you retrieve information on a specific user such as
-    a summary of their activity or a list of their activities.
   version: '1.0'
 servers:
   - url: https://api.withlloyd.com/v1
 paths:
+  /action_item:
+    post:
+      summary: Add Action Item
+      description: |
+        Action items are future activities expected to be completed by a user.
+      requestBody:
+        required: true
+        content:
+          type:
+            schema:
+              required: true
+              type: string
+              enum: [attend_meeting, commit_code, fork_repo]
+          metadata:
+            schema:
+              type: object
+              description: |
+                Defined by the type.
+
+      responses:
+        '400':
+          description: BAD REQUEST
+        '401':
+          description: UNAUTHORIZED
+        '200':
+          description: NO CONTENT
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+
+  /action_item/{id}:
+    delete:
+      summary: Remove Action Item
+      description: |
+        Action items are future activities expected to be completed by a user.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+
+      responses:
+        '400':
+          description: BAD REQUEST
+        '401':
+          description: UNAUTHORIZED
+        '204':
+          description: NO CONTENT
+
   /users:
+    post:
+      summary: Add User
+      requestBody:
+        required: true
+        content:
+          first_name:
+            schema:
+              required: true
+              type: string
+          last_name:
+            schema:
+              type: string
+              required: true
+          reference_id:
+            schema:
+              type: string
+              required: true
+              description: |
+                A unique identifier from calling client
+          email:
+            schema:
+              type: string
+              required: true
+              description: |
+                If Slack integration is required, this must match their Slack e-mail.
+          github_username:
+            schema:
+              type: string
+              description: |
+                If given, Lloyd will pull user's events
+          tags:
+            schema:
+              type: array
+              items:
+                type: string
+              description: |
+                Tags can be anything and are used to filter for users.
+
+      responses:
+        '400':
+          description: BAD REQUEST
+        '401':
+          description: UNAUTHORIZED
+        '200':
+          description: NO CONTENT
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+
+
+
+  /users/{id}:
+    put:
+      summary: Update User
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+      requestBody:
+        required: true
+        content:
+          first_name:
+            schema:
+              type: string
+          last_name:
+            schema:
+              type: string
+          reference_id:
+            required: true
+            schema:
+              type: string
+              description: |
+                A unique identifier from calling client
+          email:
+            required: true
+            schema:
+              type: string
+              description: |
+                If Slack integration is required, this must match their Slack e-mail.
+          github_username:
+            schema:
+              type: string
+              description: |
+                If given, Lloyd will pull user's events
+          tags:
+            schema:
+              type: array
+              items:
+                type: string
+              description: |
+                Tags can be anything and are used to filter for users.
+
+
+      responses:
+        '400':
+          description: BAD REQUEST
+        '401':
+          description: UNAUTHORIZED
+        '204':
+          description: NO CONTENT
+
+    delete:
+      summary: Remove User
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+
+      responses:
+        '400':
+          description: BAD REQUEST
+        '401':
+          description: UNAUTHORIZED
+        '204':
+          description: NO CONTENT
+
     get:
       summary: List of Users
       parameters:
@@ -158,7 +335,7 @@ paths:
           type: array
           items:
             type: string
-            enum: ["messages_sent", "commits", "meetings_attended"]
+            enum: ["messages", "commits", "meetings"]
       responses:
         '400':
           description: BAD REQUEST
@@ -181,10 +358,10 @@ paths:
                     timestamp:
                       type: integer
                       format: timestamp
-                    content:
-                      type: string
+                    metadata:
+                      type: object
                       description: |
-                        This will either be the content of the message, the name of the meeting, or a link to the commit hash.
+                        This will include an object specific to each type.
 
   /users/{id}/activities/summary:
     get:
@@ -242,7 +419,6 @@ paths:
                     format: Percentage represented as integer
                     description: |
                       This number represents the user's engagement score.
-
                   chat:
                     type: object
                     properties:
@@ -251,9 +427,11 @@ paths:
                         enum: ["custom", "slack"]
                       messages_sent:
                         type: integer
+                      reactions:
+                        type: integer
                       logins:
                         type: integer
-                  video:
+                  meeting:
                     type: object
                     properties:
                       source:
@@ -262,6 +440,12 @@ paths:
                       missed:
                         type: integer
                       attended:
+                        type: integer
+                      polls_seen:
+                        type: integer
+                      polls_answered:
+                        type: integer
+                      messages_sent:
                         type: integer
                   code:
                     type: object
